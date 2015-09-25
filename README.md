@@ -7,7 +7,7 @@ Table of Contents
  * [Setting a specific password for the admin account](#setting-a-specific-password-for-the-admin-account)
  * [Creating Database at Launch](#creating-database-at-launch)
  * [Persistence](#persistence)
- * [Replication - Master/Slave](#replication---master-slave)
+ * [Replication - Master/Slave](#replication---masterslave)
  * [Backup of a MySQL cluster](#backup-of-a-mysql-cluster)
  * [Checking backup](#checking-backup)
  * [Restore from backup](#restore-from-backup)
@@ -257,7 +257,7 @@ docker run --name='db_restore' -d \
   romeoz/docker-mysql
 ```
 
-Also, see ["Replication"](replication---master-slave).
+Also, see ["Replication"](replication---masterslave).
 
 Environment variables
 ---------------------
