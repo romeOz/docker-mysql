@@ -105,11 +105,11 @@ rotate_backup()
 
 import_backup()
 {
-    echo "Import dump..."
-    if [[ ${MYSQL_IMPORT} == default ]]; then
-        MYSQL_IMPORT="${MYSQL_BACKUP_DIR}/${MYSQL_BACKUP_FILENAME}"
+    FILES=$1
+    if [[ ${FILES} == default ]]; then
+        FILES="${MYSQL_BACKUP_DIR}/${MYSQL_BACKUP_FILENAME}"
     fi
-    for FILE in ${MYSQL_IMPORT}; do
+    for FILE in ${FILES}; do
 	    echo "Importing dump ${FILE} ..."
         if [[ -f "${FILE}" ]]; then
             if [[ ${FILE} =~ \.bz2$ ]]; then
@@ -201,27 +201,15 @@ fi
 # Check backup
 if [[ -n ${MYSQL_CHECK} ]]; then
     echo "Check backup..."
-    if [[ ${MYSQL_CHECK} == default ]]; then
-        MYSQL_CHECK="${MYSQL_BACKUP_DIR}/${MYSQL_BACKUP_FILENAME}"
-    fi
     if [[ -z ${DB_NAME} ]]; then
       echo "Unknown database. DB_NAME does not null"
       exit 1;
     fi
-    if [[ -f "${MYSQL_CHECK}" ]]; then
-        if [[ ${MYSQL_CHECK} =~ \.bz2$ ]]; then
-            lbzip2 -dc -n 2 ${MYSQL_CHECK} | mysql -uroot
-        else
-            mysql -uroot < "${MYSQL_CHECK}"
-        fi
-        if [[ -n $(echo "SELECT schema_name FROM information_schema.schemata WHERE schema_name='${DB_NAME}';" | mysql -uroot | grep -w "${DB_NAME}") ]]; then
-            echo "Success checking backup"
-        else
-            echo "Fail checking backup: ${MYSQL_CHECK}"
-            exit 1
-        fi
+    import_backup ${MYSQL_CHECK}
+    if [[ -n $(echo "SELECT schema_name FROM information_schema.schemata WHERE schema_name='${DB_NAME}';" | mysql -uroot | grep -w "${DB_NAME}") ]]; then
+        echo "Success checking backup"
     else
-        echo "Unknown backup: ${MYSQL_CHECK}"
+        echo "Fail checking backup: ${MYSQL_CHECK}"
         exit 1
     fi
     exit 0;
@@ -236,7 +224,8 @@ fi
 
 # Import dump
 if [[ -n ${MYSQL_IMPORT} && ${MYSQL_MODE} != slave ]]; then
-    import_backup
+    echo "Import dump..."
+    import_backup ${MYSQL_IMPORT}
 fi
 
 # Set MySQL REPLICATION - MASTER
@@ -286,7 +275,8 @@ if [[ ${MYSQL_MODE} == slave ]]; then
                 --user=${DB_REMOTE_USER} --password=${DB_REMOTE_PASS} | mysql -uroot
         fi
         if [[ -n ${MYSQL_IMPORT} ]]; then
-            import_backup
+            echo "Import dump..."
+            import_backup ${MYSQL_IMPORT}
         fi
         mysql -uroot -e "START SLAVE;"
         echo "Done!"
