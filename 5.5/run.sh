@@ -209,7 +209,7 @@ if [[ -n ${MYSQL_CHECK} ]]; then
     if [[ -n $(echo "SELECT schema_name FROM information_schema.schemata WHERE schema_name='${DB_NAME}';" | mysql -uroot | grep -w "${DB_NAME}") ]]; then
         echo "Success checking backup"
     else
-        echo "Fail checking backup: ${MYSQL_CHECK}"
+        echo "Fail checking backup"
         exit 1
     fi
     exit 0;
