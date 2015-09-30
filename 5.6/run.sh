@@ -91,7 +91,10 @@ rotate_backup()
 {
     WEEK=$(date +"%V")
     MONTH=$(date +"%b")
-    let "INDEX = WEEK % 5"
+    let "INDEX = WEEK % 5" || true
+    if [[ ${INDEX} == 0  ]]; then
+      INDEX=4
+    fi
 
     test -e ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2 && rm ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2
     mv ${MYSQL_BACKUP_DIR}/backup.bz2 ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2
