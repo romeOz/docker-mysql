@@ -12,8 +12,7 @@ Table of Contents
  * [Checking backup](#checking-backup)
  * [Restore from backup](#restore-from-backup)
  * [Environment variables](#environment-variables) 
- * [Logging](#logging)
- * [Upgrading](#upgrading)
+ * [Logging](#logging) 
  * [Out of the box](#out-of-the-box)
  
 
@@ -325,29 +324,6 @@ Create the file `/etc/logrotate.d/docker-containers` with the following text ins
 }
 ```
 > Optionally, you can replace `nocompress` to `compress` and change the number of days.
-
-Upgrading
--------------------
-
-To upgrade to newer releases, simply follow this 3 step upgrade procedure.
-
-- **Step 1**: Stop the currently running image
-
-```bash
-docker stop mysql
-```
-
-- **Step 2**: Update the docker image.
-
-```bash
-docker pull romeoz/docker-mysql
-```
-
-- **Step 3**: Start the image
-
-```bash
-docker run --name mysql -d [OPTIONS] romeoz/docker-mysql
-```
 
 Out of the box
 -------------------
