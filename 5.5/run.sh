@@ -89,6 +89,8 @@ create_backup_dir() {
 
 rotate_backup()
 {
+    echo "Rotate backup..."
+
     WEEK=$(date +"%V")
     MONTH=$(date +"%b")
     let "INDEX = WEEK % 5" || true
@@ -98,12 +100,15 @@ rotate_backup()
 
     test -e ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2 && rm ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2
     mv ${MYSQL_BACKUP_DIR}/backup.bz2 ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2
+    echo "Create backup file: ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2"
 
     test -e ${MYSQL_BACKUP_DIR}/backup.${MONTH}.bz2 && rm ${MYSQL_BACKUP_DIR}/backup.${MONTH}.bz2
     ln ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2 ${MYSQL_BACKUP_DIR}/backup.${MONTH}.bz2
+       echo "Create backup file: ${MYSQL_BACKUP_DIR}/backup.${MONTH}.bz2"
 
     test -e ${MYSQL_BACKUP_DIR}/backup.last.bz2 && rm ${MYSQL_BACKUP_DIR}/backup.last.bz2
     ln ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2 ${MYSQL_BACKUP_DIR}/backup.last.bz2
+      echo "Create backup file:  ${MYSQL_BACKUP_DIR}/backup.last.bz2"
 }
 
 import_backup()
