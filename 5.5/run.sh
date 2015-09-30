@@ -10,6 +10,7 @@ MYSQL_BACKUP_DIR=${MYSQL_BACKUP_DIR:-"/tmp/backup"}
 MYSQL_BACKUP_FILENAME=${MYSQL_BACKUP_FILENAME:-"backup.last.bz2"}
 MYSQL_IMPORT=${MYSQL_IMPORT:-}
 MYSQL_CHECK=${MYSQL_CHECK:-}
+MYSQL_ROTATE_BACKUP=${MYSQL_ROTATE_BACKUP:-true}
 
 MYSQL_USER=${MYSQL_USER:-admin}
 MYSQL_PASS=${MYSQL_PASS:-}
@@ -91,24 +92,29 @@ rotate_backup()
 {
     echo "Rotate backup..."
 
-    WEEK=$(date +"%V")
-    MONTH=$(date +"%b")
-    let "INDEX = WEEK % 5" || true
-    if [[ ${INDEX} == 0  ]]; then
-      INDEX=4
+    if [[ ${MYSQL_ROTATE_BACKUP} == true ]]; then
+        WEEK=$(date +"%V")
+        MONTH=$(date +"%b")
+        let "INDEX = WEEK % 5" || true
+        if [[ ${INDEX} == 0  ]]; then
+          INDEX=4
+        fi
+
+        test -e ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2 && rm ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2
+        mv ${MYSQL_BACKUP_DIR}/backup.bz2 ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2
+        echo "Create backup file: ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2"
+
+        test -e ${MYSQL_BACKUP_DIR}/backup.${MONTH}.bz2 && rm ${MYSQL_BACKUP_DIR}/backup.${MONTH}.bz2
+        ln ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2 ${MYSQL_BACKUP_DIR}/backup.${MONTH}.bz2
+           echo "Create backup file: ${MYSQL_BACKUP_DIR}/backup.${MONTH}.bz2"
+
+        test -e ${MYSQL_BACKUP_DIR}/backup.last.bz2 && rm ${MYSQL_BACKUP_DIR}/backup.last.bz2
+        ln ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2 ${MYSQL_BACKUP_DIR}/backup.last.bz2
+          echo "Create backup file:  ${MYSQL_BACKUP_DIR}/backup.last.bz2"
+    else
+        mv ${MYSQL_BACKUP_DIR}/backup.bz2 ${MYSQL_BACKUP_DIR}/backup.last.bz2
+        echo "Create backup file: ${MYSQL_BACKUP_DIR}/backup.last.bz2"
     fi
-
-    test -e ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2 && rm ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2
-    mv ${MYSQL_BACKUP_DIR}/backup.bz2 ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2
-    echo "Create backup file: ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2"
-
-    test -e ${MYSQL_BACKUP_DIR}/backup.${MONTH}.bz2 && rm ${MYSQL_BACKUP_DIR}/backup.${MONTH}.bz2
-    ln ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2 ${MYSQL_BACKUP_DIR}/backup.${MONTH}.bz2
-       echo "Create backup file: ${MYSQL_BACKUP_DIR}/backup.${MONTH}.bz2"
-
-    test -e ${MYSQL_BACKUP_DIR}/backup.last.bz2 && rm ${MYSQL_BACKUP_DIR}/backup.last.bz2
-    ln ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2 ${MYSQL_BACKUP_DIR}/backup.last.bz2
-      echo "Create backup file:  ${MYSQL_BACKUP_DIR}/backup.last.bz2"
 }
 
 import_backup()

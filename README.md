@@ -282,6 +282,8 @@ Environment variables
 
 `MYSQL_MODE`: Set a specific mode. Takes on the values `master`, `slave` or `backup`.
 
+`MYSQL_ROTATE_BACKUP`: Determines whether to use the rotation of backups (default "true").
+
 Logging
 -------------------
 
