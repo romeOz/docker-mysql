@@ -11,6 +11,7 @@ MYSQL_BACKUP_FILENAME=${MYSQL_BACKUP_FILENAME:-"backup.last.bz2"}
 MYSQL_IMPORT=${MYSQL_IMPORT:-}
 MYSQL_CHECK=${MYSQL_CHECK:-}
 MYSQL_ROTATE_BACKUP=${MYSQL_ROTATE_BACKUP:-true}
+MYSQL_CACHE_ENABLED=${MYSQL_CACHE_ENABLED:-false}
 
 MYSQL_USER=${MYSQL_USER:-admin}
 MYSQL_PASS=${MYSQL_PASS:-}
@@ -106,11 +107,11 @@ rotate_backup()
 
         test -e ${MYSQL_BACKUP_DIR}/backup.${MONTH}.bz2 && rm ${MYSQL_BACKUP_DIR}/backup.${MONTH}.bz2
         ln ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2 ${MYSQL_BACKUP_DIR}/backup.${MONTH}.bz2
-           echo "Create backup file: ${MYSQL_BACKUP_DIR}/backup.${MONTH}.bz2"
+        echo "Create backup file: ${MYSQL_BACKUP_DIR}/backup.${MONTH}.bz2"
 
         test -e ${MYSQL_BACKUP_DIR}/backup.last.bz2 && rm ${MYSQL_BACKUP_DIR}/backup.last.bz2
         ln ${MYSQL_BACKUP_DIR}/backup.${INDEX}.bz2 ${MYSQL_BACKUP_DIR}/backup.last.bz2
-          echo "Create backup file:  ${MYSQL_BACKUP_DIR}/backup.last.bz2"
+        echo "Create backup file:  ${MYSQL_BACKUP_DIR}/backup.last.bz2"
     else
         mv ${MYSQL_BACKUP_DIR}/backup.bz2 ${MYSQL_BACKUP_DIR}/backup.last.bz2
         echo "Create backup file: ${MYSQL_BACKUP_DIR}/backup.last.bz2"
@@ -150,6 +151,11 @@ if [[ ! -d ${MYSQL_HOME}/mysql ]]; then
     echo "Done!"
 else
     echo "Using an existing volume of MySQL."
+fi
+
+if [[ ${MYSQL_CACHE_ENABLED} == true ]]; then
+    echo "Enabled query cache to '${MYSQL_CONFIG}' (query_cache_type = 1)"
+    sed -i "s/^#query_cache_type.*/query_cache_type = 1/" ${MYSQL_CONFIG}
 fi
 
 # Set MySQL REPLICATION - MASTER
