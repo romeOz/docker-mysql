@@ -43,43 +43,21 @@ Run the mysql image:
 docker run --name mysql -d romeoz/docker-mysql
 ```
 
-The first time that you run your container, a new user `admin` with all privileges
-will be created in MySQL with a random password. To get the password, check the logs
-of the container by running:
-
-```bash
-docker logs <CONTAINER_ID>
-```
-
-You will see an output like the following:
-
-        ========================================================================
-        You can now connect to this MySQL Server using:
-        
-            mysql -uadmin -p47nnf4FweaKu -h<host> -P<port>
-        
-        Please remember to change the above password as soon as possible!
-        MySQL user 'root' has no password but only allows local connections.
-        ========================================================================
-
-In this case, `47nnf4FweaKu` is the password allocated to the `admin` user.
-
-Remember that the `root` user has no password, but it's only accessible from within the container.
-
 The simplest way to login to the mysql container is to use the `docker exec` command to attach a new process to the running container and connect to the MySQL Server over the unix socket.
 
 ```bash
 docker exec -it mysql mysql -uroot
 ```
 
-Passing extra configuration to start mysql server
-------------------------------------------------
+Command-line arguments
+-------------------
 
-To pass additional settings to `mysqld`, you can use environment variable `EXTRA_OPTS`.
-For example, to run mysql using lower case table name, you can do:
+You can customize the launch command of mysql by specifying arguments to `mysqld` on the docker run command. For example, to run mysql using lower case table name, you can do:
 
 ```bash
-docker run -d -e 'EXTRA_OPTS=--lower_case_table_names=1' romeoz/docker-mysql
+docker run --name db -d \
+  romeoz/docker-mysql \
+  --lower_case_table_names=1
 ```
 
 Setting a specific password for the admin account
@@ -89,7 +67,7 @@ If you want to use a preset password instead of a random generated one, you can
 set the environment variable `MYSQL_PASS` to your specific password when running the container:
 
 ```bash
-docker run -d -e 'MYSQL_PASS=mypass' romeoz/docker-mysql
+docker run --name db -d -e 'MYSQL_PASS=mypass' romeoz/docker-mysql
 ```
 
 You can now test your deployment:
@@ -99,6 +77,8 @@ docker exec -it db mysql -uadmin -pmypass
 ```
 
 The admin username can also be set via the `MYSQL_USER` environment variable.
+
+>Remember that the `root` user has no password, but it's only accessible from within the container.
 
 Creating Database at Launch
 -------------------

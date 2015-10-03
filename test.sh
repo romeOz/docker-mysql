@@ -76,8 +76,6 @@ rm -r vol55*
 
 
 
-
-
 echo ""
 echo ""
 echo "-- Building mysql 5.6 image"
@@ -129,12 +127,12 @@ docker run -it --rm --link base_4:base_4 -e 'MYSQL_MODE=backup' -e 'DB_REMOTE_HO
 echo ""
 echo "--- Restore slave from slave-file"
 docker run --name base_5 -d --link base_1:base_1 -e 'MYSQL_MODE=slave' -e 'REPLICATION_HOST=base_1' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' -e 'MYSQL_IMPORT=/tmp/backup/backup.last.bz2' -v $(pwd)/vol56/backup_slave:/tmp/backup  mysql-5.6; sleep 10
-docker exec -it base_1 mysql -uroot -e 'INSERT INTO test_1.foo (name) VALUES ("Bob");'; sleep 5
+docker exec -it base_1 mysql -uroot -e 'INSERT INTO test_1.foo (name) VALUES ("Bob");'; sleep 10
 docker exec -it base_5 mysql -uroot -e 'SELECT * FROM test_1.foo;' | grep -c -w "Bob"
-docker exec -it base_1 mysql -uroot -e 'SELECT COUNT(*) FROM test_1.foo;' | grep -c -w "3"
-docker exec -it base_2 mysql -uroot -e 'SELECT COUNT(*) FROM test_1.foo;' | grep -c -w "3"
-docker exec -it base_3 mysql -uroot -e 'SELECT COUNT(*) FROM test_1.foo;' | grep -c -w "3"
-docker exec -it base_4 mysql -uroot -e 'SELECT COUNT(*) FROM test_1.foo;' | grep -c -w "3"
+docker exec -it base_1 mysql -uroot -e 'SELECT COUNT(*) FROM test_1.foo;' | grep -c -w "3";sleep 3
+docker exec -it base_2 mysql -uroot -e 'SELECT COUNT(*) FROM test_1.foo;' | grep -c -w "3";sleep 3
+docker exec -it base_3 mysql -uroot -e 'SELECT COUNT(*) FROM test_1.foo;' | grep -c -w "3";sleep 3
+docker exec -it base_4 mysql -uroot -e 'SELECT COUNT(*) FROM test_1.foo;' | grep -c -w "3";sleep 3
 docker exec -it base_5 mysql -uroot -e 'SELECT COUNT(*) FROM test_1.foo;' | grep -c -w "3"
 echo ""
 echo "-- Clear"
