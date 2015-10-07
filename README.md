@@ -3,6 +3,7 @@ Table of Contents
 
  * [Installation](#installation)
  * [Quick Start](#quick-start)
+ * [Command-line arguments](#command-line-arguments) 
  * [Setting a specific password for the admin account](#setting-a-specific-password-for-the-admin-account)
  * [Creating Database at Launch](#creating-database-at-launch)
  * [Persistence](#persistence)
@@ -12,8 +13,7 @@ Table of Contents
  * [Replication - Master/Slave](#replication---masterslave)
  * [Environment variables](#environment-variables) 
  * [Logging](#logging) 
- * [Out of the box](#out-of-the-box)
- 
+ * [Out of the box](#out-of-the-box) 
 
 Installation
 -------------------
