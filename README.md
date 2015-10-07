@@ -146,7 +146,7 @@ or import backup
 ```bash
 docker run --name='mysql-master' -d \
   -e 'MYSQL_MODE=master' \
-  -e 'MYSQL_IMPORT=/tmp/backup/backup.last.bz2' \
+  -e 'MYSQL_RESTORE=/tmp/backup/backup.last.bz2' \
   -e 'MYSQL_USER=dbuser' -e 'MYSQL_PASS=dbpass' \
   -v /host/to/path/backup:/tmp/backup \
   romeoz/docker-mysql
@@ -172,7 +172,7 @@ docker run --name='mysql-slave' -d  \
   --link mysql-master:mysql-master  \
   -e 'MYSQL_MODE=slave' -e 'MYSQL_PASS=pass' \
   -e 'REPLICATION_HOST=mysql-master' \
-  -e 'MYSQL_IMPORT=/tmp/backup/backup.last.bz2' \
+  -e 'MYSQL_RESTORE=/tmp/backup/backup.last.bz2' \
   -v /host/to/path/backup:/tmp/backup \
   romeoz/docker-mysql
 ```
@@ -199,16 +199,16 @@ Archive will be available in the `/host/to/path/backup`.
 
 > Algorithm: one backup per week (total 4), one backup per month (total 12) and the last backup. Example: `backup.last.tar.bz2`, `backup.1.tar.bz2` and `/backup.dec.tar.bz2`.
 
-To pass additional settings to `mysqldump`, you can use environment variable `BACKUP_OPTS`.
+To pass additional settings to `mysqldump`, you can use command-line arguments:
 
 ```bash
 docker run -it --rm \
     --link mysql-master:mysql-master \
-    -e 'MYSQL_MODE=backup' \
-    -e 'BACKUP_OPTS=--master-data --single-transaction' \
+    -e 'MYSQL_MODE=backup' \    
     -e 'DB_REMOTE_HOST=mysql' -e 'DB_REMOTE_USER=admin' -e 'DB_REMOTE_PASS=pass' \
     -v /host/to/path/backup:/tmp/backup \    
-    romeoz/docker-mysql
+    romeoz/docker-mysql \
+    --master-data --single-transaction
 ```
 
 Checking backup
@@ -231,12 +231,12 @@ Restore from backup
 
 ```bash
 docker run --name='db_restore' -d \
-  -e 'MYSQL_IMPORT=default' \
+  -e 'MYSQL_RESTORE=default' \
   -v /host/to/path/backup:/tmp/backup \
   romeoz/docker-mysql
 ```
 
-Also, see ["Replication"](replication---masterslave).
+Also see ["Replication"](replication---masterslave).
 
 Environment variables
 ---------------------
@@ -245,23 +245,23 @@ Environment variables
 
 `MYSQL_PASS`: Set a specific password for the admin account.
 
-`REPLICATION_PORT`: Set a specific replication port for the master instance (default '3306').
-
-`REPLICATION_USER`: Set a specific replication username for the master instance (default 'replica').
-
-`REPLICATION_PASS`: Set a specific replication password for the master instance (default 'replica').
+`MYSQL_MODE`: Set a specific mode. Takes on the values `master`, `slave` or `backup`.
 
 `MYSQL_BACKUP_DIR`: Set a specific backup directory (default '/tmp/backup').
 
 `MYSQL_BACKUP_FILENAME`: Set a specific filename backup (default 'backup.last.bz2').
 
-`MYSQL_IMPORT`: Defines one or more SQL scripts/dumps separated by spaces to initialize the database. Note that the scripts must be inside the container, so you may need to mount them. You can specify as `default` that is equivalent to the `/tmp/backup/backup.last.bz2`
- 
 `MYSQL_CHECK`: Defines one SQL script/dump to initialize the database. Note that the dump must be inside the container, so you may need to mount them. You can specify as `default` that is equivalent to the `/tmp/backup/backup.last.bz2`
 
-`MYSQL_MODE`: Set a specific mode. Takes on the values `master`, `slave` or `backup`.
+`MYSQL_RESTORE`: Defines one or more SQL scripts/dumps separated by spaces to initialize the database. Note that the scripts must be inside the container, so you may need to mount them. You can specify as `default` that is equivalent to the `/tmp/backup/backup.last.bz2`
 
 `MYSQL_ROTATE_BACKUP`: Determines whether to use the rotation of backups (default "true").
+
+`REPLICATION_PORT`: Set a specific replication port for the master instance (default '3306').
+
+`REPLICATION_USER`: Set a specific replication username for the master instance (default 'replica').
+
+`REPLICATION_PASS`: Set a specific replication password for the master instance (default 'replica').
 
 Logging
 -------------------

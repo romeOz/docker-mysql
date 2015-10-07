@@ -37,19 +37,19 @@ echo "--- Create slave"
 docker run --name base_2 -d --link base_1:base_1 -e 'MYSQL_MODE=slave' -e 'REPLICATION_HOST=base_1' -e 'DB_REMOTE_USER=user' -e 'DB_REMOTE_PASS=pass' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' mysql-5.5; sleep 10
 echo ""
 echo "--- Backup master"
-docker run -it --rm --link base_1:base_1 -e 'MYSQL_MODE=backup' -e 'DB_REMOTE_HOST=base_1' -e 'DB_REMOTE_USER=user' -e 'DB_REMOTE_PASS=pass' -e 'BACKUP_OPTS=--master-data --single-transaction' -v $(pwd)/vol55/backup_master:/tmp/backup mysql-5.5; sleep 10
+docker run -it --rm --link base_1:base_1 -e 'MYSQL_MODE=backup' -e 'DB_REMOTE_HOST=base_1' -e 'DB_REMOTE_USER=user' -e 'DB_REMOTE_PASS=pass' -v $(pwd)/vol55/backup_master:/tmp/backup mysql-5.5 --master-data --single-transaction; sleep 10
 echo ""
 echo "--- Restore slave from master-file"
-docker run --name base_3 -d --link base_1:base_1 -e 'MYSQL_MODE=slave' -e 'REPLICATION_HOST=base_1' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' -e 'MYSQL_IMPORT=/tmp/backup/backup.last.bz2' -v $(pwd)/vol55/backup_master:/tmp/backup  mysql-5.5; sleep 10
+docker run --name base_3 -d --link base_1:base_1 -e 'MYSQL_MODE=slave' -e 'REPLICATION_HOST=base_1' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' -e 'MYSQL_RESTORE=/tmp/backup/backup.last.bz2' -v $(pwd)/vol55/backup_master:/tmp/backup  mysql-5.5; sleep 10
 docker exec -it base_1 mysql -uroot -e 'INSERT INTO test_1.foo (name) VALUES ("Tom");'; sleep 5
-docker run --name base_4 -d --link base_1:base_1 -e 'MYSQL_MODE=slave' -e 'REPLICATION_HOST=base_1' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' -e 'MYSQL_IMPORT=default' -v $(pwd)/vol55/backup_master:/tmp/backup  mysql-5.5; sleep 10
+docker run --name base_4 -d --link base_1:base_1 -e 'MYSQL_MODE=slave' -e 'REPLICATION_HOST=base_1' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' -e 'MYSQL_RESTORE=default' -v $(pwd)/vol55/backup_master:/tmp/backup  mysql-5.5; sleep 10
 docker exec -it base_3 mysql -uroot -e 'SELECT * FROM test_1.foo;' | grep -c -w "Tom"
 echo ""
 echo "--- Backup slave"
-docker run -it --rm --link base_4:base_4 -e 'MYSQL_MODE=backup' -e 'DB_REMOTE_HOST=base_4' -e 'DB_REMOTE_USER=user' -e 'DB_REMOTE_PASS=pass' -e 'BACKUP_OPTS=--dump-slave' -v  $(pwd)/vol55/backup_slave:/tmp/backup mysql-5.5; sleep 10
+docker run -it --rm --link base_4:base_4 -e 'MYSQL_MODE=backup' -e 'DB_REMOTE_HOST=base_4' -e 'DB_REMOTE_USER=user' -e 'DB_REMOTE_PASS=pass' -v  $(pwd)/vol55/backup_slave:/tmp/backup mysql-5.5 --dump-slave; sleep 10
 echo ""
 echo "--- Restore slave from slave-file"
-docker run --name base_5 -d --link base_1:base_1 -e 'MYSQL_MODE=slave' -e 'REPLICATION_HOST=base_1' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' -e 'MYSQL_IMPORT=/tmp/backup/backup.last.bz2' -v $(pwd)/vol55/backup_slave:/tmp/backup  mysql-5.5; sleep 10
+docker run --name base_5 -d --link base_1:base_1 -e 'MYSQL_MODE=slave' -e 'REPLICATION_HOST=base_1' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' -e 'MYSQL_RESTORE=/tmp/backup/backup.last.bz2' -v $(pwd)/vol55/backup_slave:/tmp/backup  mysql-5.5; sleep 10
 docker exec -it base_1 mysql -uroot -e 'INSERT INTO test_1.foo (name) VALUES ("Bob");'; sleep 5
 docker exec -it base_5 mysql -uroot -e 'SELECT * FROM test_1.foo;' | grep -c -w "Bob"
 docker exec -it base_1 mysql -uroot -e 'SELECT COUNT(*) FROM test_1.foo;' | grep -c -w "3"
@@ -62,7 +62,7 @@ echo "-- Clear"
 docker rm -f -v $(sudo docker ps -aq); sleep 5
 echo ""
 echo "--- Restore master from master-file"
-docker run --name restore_1 -d -e 'MYSQL_MODE=master' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' -e 'MYSQL_IMPORT=default' -v $(pwd)/vol55/backup_master:/tmp/backup mysql-5.5; sleep 10
+docker run --name restore_1 -d -e 'MYSQL_MODE=master' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' -e 'MYSQL_RESTORE=default' -v $(pwd)/vol55/backup_master:/tmp/backup mysql-5.5; sleep 10
 docker run --name restore_2 -d --link restore_1:restore_1 -e 'MYSQL_MODE=slave' -e 'REPLICATION_HOST=restore_1' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' -e 'DB_REMOTE_USER=user' -e 'DB_REMOTE_PASS=pass'  mysql-5.5; sleep 10
 docker exec -it restore_1 mysql -uroot -e 'INSERT INTO test_1.foo (name) VALUES ("Romeo");'; sleep 5
 docker exec -it restore_1 mysql -uroot -e 'SELECT * FROM test_1.foo;' | grep -c -w "Romeo";
@@ -114,19 +114,19 @@ echo "--- Create slave"
 docker run --name base_2 -d --link base_1:base_1 -e 'MYSQL_MODE=slave' -e 'REPLICATION_HOST=base_1' -e 'DB_REMOTE_USER=user' -e 'DB_REMOTE_PASS=pass' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' mysql-5.6; sleep 10
 echo ""
 echo "--- Backup master"
-docker run -it --rm --link base_1:base_1 -e 'MYSQL_MODE=backup' -e 'DB_REMOTE_HOST=base_1' -e 'DB_REMOTE_USER=user' -e 'DB_REMOTE_PASS=pass' -e 'BACKUP_OPTS=--master-data --single-transaction' -v $(pwd)/vol56/backup_master:/tmp/backup mysql-5.6; sleep 10
+docker run -it --rm --link base_1:base_1 -e 'MYSQL_MODE=backup' -e 'DB_REMOTE_HOST=base_1' -e 'DB_REMOTE_USER=user' -e 'DB_REMOTE_PASS=pass' -v $(pwd)/vol56/backup_master:/tmp/backup mysql-5.6 --master-data --single-transaction; sleep 10
 echo ""
 echo "--- Restore slave from master-file"
-docker run --name base_3 -d --link base_1:base_1 -e 'MYSQL_MODE=slave' -e 'REPLICATION_HOST=base_1' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' -e 'MYSQL_IMPORT=/tmp/backup/backup.last.bz2' -v $(pwd)/vol56/backup_master:/tmp/backup  mysql-5.6; sleep 10
+docker run --name base_3 -d --link base_1:base_1 -e 'MYSQL_MODE=slave' -e 'REPLICATION_HOST=base_1' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' -e 'MYSQL_RESTORE=/tmp/backup/backup.last.bz2' -v $(pwd)/vol56/backup_master:/tmp/backup  mysql-5.6; sleep 10
 docker exec -it base_1 mysql -uroot -e 'INSERT INTO test_1.foo (name) VALUES ("Tom");'; sleep 5
-docker run --name base_4 -d --link base_1:base_1 -e 'MYSQL_MODE=slave' -e 'REPLICATION_HOST=base_1' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' -e 'MYSQL_IMPORT=default' -v $(pwd)/vol56/backup_master:/tmp/backup  mysql-5.6; sleep 10
+docker run --name base_4 -d --link base_1:base_1 -e 'MYSQL_MODE=slave' -e 'REPLICATION_HOST=base_1' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' -e 'MYSQL_RESTORE=default' -v $(pwd)/vol56/backup_master:/tmp/backup  mysql-5.6; sleep 10
 docker exec -it base_3 mysql -uroot -e 'SELECT * FROM test_1.foo;' | grep -c -w "Tom"
 echo ""
 echo "--- Backup slave"
-docker run -it --rm --link base_4:base_4 -e 'MYSQL_MODE=backup' -e 'DB_REMOTE_HOST=base_4' -e 'DB_REMOTE_USER=user' -e 'DB_REMOTE_PASS=pass' -e 'BACKUP_OPTS=--dump-slave' -v  $(pwd)/vol56/backup_slave:/tmp/backup mysql-5.6; sleep 10
+docker run -it --rm --link base_4:base_4 -e 'MYSQL_MODE=backup' -e 'DB_REMOTE_HOST=base_4' -e 'DB_REMOTE_USER=user' -e 'DB_REMOTE_PASS=pass' -v  $(pwd)/vol56/backup_slave:/tmp/backup mysql-5.6 --dump-slave; sleep 10
 echo ""
 echo "--- Restore slave from slave-file"
-docker run --name base_5 -d --link base_1:base_1 -e 'MYSQL_MODE=slave' -e 'REPLICATION_HOST=base_1' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' -e 'MYSQL_IMPORT=/tmp/backup/backup.last.bz2' -v $(pwd)/vol56/backup_slave:/tmp/backup  mysql-5.6; sleep 10
+docker run --name base_5 -d --link base_1:base_1 -e 'MYSQL_MODE=slave' -e 'REPLICATION_HOST=base_1' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' -e 'MYSQL_RESTORE=/tmp/backup/backup.last.bz2' -v $(pwd)/vol56/backup_slave:/tmp/backup  mysql-5.6; sleep 10
 docker exec -it base_1 mysql -uroot -e 'INSERT INTO test_1.foo (name) VALUES ("Bob");'; sleep 10
 docker exec -it base_5 mysql -uroot -e 'SELECT * FROM test_1.foo;' | grep -c -w "Bob"
 docker exec -it base_1 mysql -uroot -e 'SELECT COUNT(*) FROM test_1.foo;' | grep -c -w "3";sleep 3
@@ -139,7 +139,7 @@ echo "-- Clear"
 docker rm -f -v $(sudo docker ps -aq); sleep 5
 echo ""
 echo "--- Restore master from master-file"
-docker run --name restore_1 -d -e 'MYSQL_MODE=master' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' -e 'MYSQL_IMPORT=default' -v $(pwd)/vol56/backup_master:/tmp/backup mysql-5.6; sleep 10
+docker run --name restore_1 -d -e 'MYSQL_MODE=master' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' -e 'MYSQL_RESTORE=default' -v $(pwd)/vol56/backup_master:/tmp/backup mysql-5.6; sleep 10
 docker run --name restore_2 -d --link restore_1:restore_1 -e 'MYSQL_MODE=slave' -e 'REPLICATION_HOST=restore_1' -e MYSQL_USER=user -e 'MYSQL_PASS=pass' -e 'DB_REMOTE_USER=user' -e 'DB_REMOTE_PASS=pass'  mysql-5.6; sleep 10
 docker exec -it restore_1 mysql -uroot -e 'INSERT INTO test_1.foo (name) VALUES ("Romeo");'; sleep 5
 docker exec -it restore_1 mysql -uroot -e 'SELECT * FROM test_1.foo;' | grep -c -w "Romeo";

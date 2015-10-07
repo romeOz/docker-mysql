@@ -3,12 +3,12 @@
 set -m
 set -e
 
-MYSQL_DATADIR=${MYSQL_DATADIR:-"/var/lib/mysql"}
+MYSQL_DATA_DIR=${MYSQL_DATA_DIR:-"/var/lib/mysql"}
 MYSQL_CONFIG=${MYSQL_CONFIG:-"/etc/mysql/conf.d/my.cnf"}
 MYSQL_LOG=${MYSQL_LOG:-"/var/log/mysql/error.log"}
 MYSQL_BACKUP_DIR=${MYSQL_BACKUP_DIR:-"/tmp/backup"}
 MYSQL_BACKUP_FILENAME=${MYSQL_BACKUP_FILENAME:-"backup.last.bz2"}
-MYSQL_IMPORT=${MYSQL_IMPORT:-}
+MYSQL_RESTORE=${MYSQL_RESTORE:-}
 MYSQL_CHECK=${MYSQL_CHECK:-}
 MYSQL_ROTATE_BACKUP=${MYSQL_ROTATE_BACKUP:-true}
 MYSQL_CACHE_ENABLED=${MYSQL_CACHE_ENABLED:-false}
@@ -21,7 +21,6 @@ DB_REMOTE_HOST=${DB_REMOTE_HOST:-}
 DB_REMOTE_PORT=${DB_REMOTE_PORT:-3306}
 DB_REMOTE_USER=${DB_REMOTE_USER:-admin}
 DB_REMOTE_PASS=${DB_REMOTE_PASS:-}
-BACKUP_OPTS=${BACKUP_OPTS:-"--opt"}
 
 MYSQL_MODE=${MYSQL_MODE:-}
 
@@ -36,7 +35,7 @@ chmod 644 /etc/mysql/conf.d/mysqld_charset.cnf
 
 start_mysql()
 {
-  /usr/bin/mysqld_safe >/dev/null 2>&1 &
+    /usr/bin/mysqld_safe >/dev/null 2>&1 &
 
     # wait for mysql server to start (max 30 seconds)
     timeout=30
@@ -74,7 +73,8 @@ create_db()
     fi
 }
 
-create_backup_dir() {
+create_backup_dir()
+{
     if [[ ! -d ${MYSQL_BACKUP_DIR}/ ]]; then
         mkdir -p ${MYSQL_BACKUP_DIR}/
     fi
@@ -122,7 +122,7 @@ import_backup()
             if [[ ${FILE} =~ \.bz2$ ]]; then
                 lbzip2 -dc -n 2 ${FILE} | mysql -uroot
             else
-               mysql -uroot < "${FILE}"
+                mysql -uroot < "${FILE}"
             fi
         else
             echo "Unknown dump: ${FILE}"
@@ -132,11 +132,11 @@ import_backup()
 }
 
 # Initialize empty data volume and create MySQL user
-if [[ ! -d ${MYSQL_DATADIR}/mysql ]]; then
-    echo "An empty or uninitialized MySQL volume is detected in ${MYSQL_DATADIR}"
+if [[ ! -d ${MYSQL_DATA_DIR}/mysql ]]; then
+    echo "An empty or uninitialized MySQL volume is detected in ${MYSQL_DATA_DIR}"
     echo "Installing MySQL..."
     mysql_install_db || exit 1
-    touch /var/lib/mysql/.EMPTY_DB
+    touch /tmp/.EMPTY_DB
     echo "Done!"
 else
     echo "Using an existing volume of MySQL."
@@ -150,12 +150,12 @@ fi
 # Set MySQL REPLICATION - MASTER
 if [[ ${MYSQL_MODE} == master ]]; then
     echo "Configuring MySQL replication as master (1/2) ..."
-    if [ ! -f /replication_set.1 ]; then
+    if [ ! -f /tmp/.REPLICATION_SET_1 ]; then
         RAND="$(date +%s | rev | cut -c 1-2)$(echo ${RANDOM})"
         echo "Writting configuration file '${MYSQL_CONFIG}' with server-id=${RAND}"
         sed -i "s/^#server-id.*/server-id = ${RAND}/" ${MYSQL_CONFIG}
         sed -i "s/^#log-bin.*/log-bin = mysql-bin/" ${MYSQL_CONFIG}
-        touch /replication_set.1
+        touch /tmp/.REPLICATION_SET_1
     else
         echo "MySQL replication master already configured, skip"
     fi
@@ -171,7 +171,7 @@ if [[ ${MYSQL_MODE} == slave ]]; then
         echo
         exit 1;
     fi
-    if [ ! -f /replication_set.1 ]; then
+    if [ ! -f /tmp/.REPLICATION_SET_1 ]; then
         RAND="$(date +%s | rev | cut -c 1-2)$(echo ${RANDOM})"
         echo "Writting configuration file '${MYSQL_CONFIG}' with server-id=${RAND}"
         sed -i "s/^#server-id.*/server-id = ${RAND}/" ${MYSQL_CONFIG}
@@ -179,7 +179,7 @@ if [[ ${MYSQL_MODE} == slave ]]; then
         #sed -i "s/^#relay-log.*/relay-log = mysql-relay-bin/" ${MYSQL_CONFIG}
         # 1062 - Duplicate entry for INSERT...
         #sed -i "s/^#slave-skip-errors.*/slave-skip-errors = 1062/" ${MYSQL_CONFIG}
-        touch /replication_set.1
+        touch /tmp/.REPLICATION_SET_1
     else
         echo "MySQL replication slave already configured, skip"
     fi
@@ -187,10 +187,10 @@ fi
 
 # allow arguments to be passed to mysqld_safe
 if [[ ${1:0:1} = '-' ]]; then
-  EXTRA_ARGS="$@"
+  EXTRA_OPTS="$@"
   set --
 elif [[ ${1} == mysqld_safe || ${1} == $(which mysqld_safe) ]]; then
-  EXTRA_ARGS="${@:2}"
+  EXTRA_OPTS="${@:2}"
   set --
 fi
 
@@ -210,9 +210,12 @@ if [[ -z ${1} ]]; then
             echo
             exit 1;
         fi
+        if [[ -z ${EXTRA_OPTS} ]]; then
+            EXTRA_OPTS="--compress --opt"
+        fi
         echo "Backup database..."
         mysqldump --all-databases --host=${DB_REMOTE_HOST} --port=${DB_REMOTE_PORT} \
-            --user=${DB_REMOTE_USER} --password=${DB_REMOTE_PASS} --compress ${BACKUP_OPTS} \
+            --user=${DB_REMOTE_USER} --password=${DB_REMOTE_PASS} ${EXTRA_OPTS} \
         | lbzip2 -n 2 -9 > ${MYSQL_BACKUP_DIR}/backup.bz2
         rotate_backup
         exit 0;
@@ -225,7 +228,7 @@ if [[ -z ${1} ]]; then
           echo "Unknown database. DB_NAME does not null"
           exit 1;
         fi
-        import_backup ${MYSQL_CHECK}
+        import_backup "${MYSQL_CHECK}"
         if [[ -n $(echo "SELECT schema_name FROM information_schema.schemata WHERE schema_name='${DB_NAME}';" | mysql -uroot | grep -w "${DB_NAME}") ]]; then
             echo "Success checking backup"
         else
@@ -237,22 +240,22 @@ if [[ -z ${1} ]]; then
 
 
     # Create admin user and pre create database
-    if [ -f /var/lib/mysql/.EMPTY_DB ]; then
+    if [ -f /tmp/.EMPTY_DB ]; then
         create_mysql_user
         create_db
-        rm /var/lib/mysql/.EMPTY_DB
+        rm /tmp/.EMPTY_DB
     fi
 
-    # Import dump
-    if [[ -n ${MYSQL_IMPORT} && ${MYSQL_MODE} != slave ]]; then
+    # Restore form backup
+    if [[ -n ${MYSQL_RESTORE} && ${MYSQL_MODE} != slave ]]; then
         echo "Import dump..."
-        import_backup ${MYSQL_IMPORT}
+        import_backup "${MYSQL_RESTORE}"
     fi
 
     # Set MySQL REPLICATION - MASTER
     if [[ ${MYSQL_MODE} == master ]]; then
         echo "Configuring MySQL replication as master (2/2) ..."
-        if [ ! -f /replication_set.2 ]; then
+        if [ ! -f /tmp/.REPLICATION_SET_2 ]; then
             if [[ -z ${REPLICATION_USER} || -z ${REPLICATION_PASS} ]]; then
                 echo
                 echo "WARNING: "
@@ -270,7 +273,7 @@ if [[ -z ${1} ]]; then
             mysql -uroot -e "GRANT REPLICATION SLAVE ON *.* TO '${REPLICATION_USER}'@'%'"
             mysql -uroot -e "reset master"
             echo "Done!"
-            touch /replication_set.2
+            touch /tmp/.REPLICATION_SET_2
         else
             echo "MySQL replication master already configured, skip"
         fi
@@ -287,28 +290,28 @@ if [[ -z ${1} ]]; then
             exit 1;
         fi
 
-        if [ ! -f /replication_set.2 ]; then
+        if [ ! -f /tmp/.REPLICATION_SET_2 ]; then
             echo "Setting master connection info on slave"
             mysql -uroot -e "CHANGE MASTER TO MASTER_HOST='${REPLICATION_HOST}',MASTER_USER='${REPLICATION_USER}',MASTER_PASSWORD='${REPLICATION_PASS}',MASTER_PORT=${REPLICATION_PORT}, MASTER_CONNECT_RETRY=30;"
-            if [[ -n ${DB_REMOTE_PASS} && -z ${MYSQL_IMPORT} ]]; then
+            if [[ -n ${DB_REMOTE_PASS} && -z ${MYSQL_RESTORE} ]]; then
                 mysqldump --all-databases --master-data --single-transaction --compress \
                     --host=${REPLICATION_HOST} --port=${REPLICATION_PORT} \
                     --user=${DB_REMOTE_USER} --password=${DB_REMOTE_PASS} | mysql -uroot
             fi
-            if [[ -n ${MYSQL_IMPORT} ]]; then
+            if [[ -n ${MYSQL_RESTORE} ]]; then
                 echo "Import dump..."
-                import_backup ${MYSQL_IMPORT}
+                import_backup "${MYSQL_RESTORE}"
             fi
             mysql -uroot -e "START SLAVE;"
             echo "Done!"
-            touch /replication_set.2
+            touch /tmp/.REPLICATION_SET_2
         else
             echo "MySQL replication slave already configured, skip"
         fi
     fi
 
     /usr/bin/mysqladmin shutdown
-    exec $(which mysqld_safe) $EXTRA_ARGS
+    exec mysqld_safe ${EXTRA_OPTS}
 else
     exec "$@"
 fi
