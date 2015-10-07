@@ -3,14 +3,13 @@ Table of Contents
 
  * [Installation](#installation)
  * [Quick Start](#quick-start)
- * [Passing extra configuration to start mysql server](#passing-extra-configuration-to-start-mysql-server)
  * [Setting a specific password for the admin account](#setting-a-specific-password-for-the-admin-account)
  * [Creating Database at Launch](#creating-database-at-launch)
  * [Persistence](#persistence)
- * [Replication - Master/Slave](#replication---masterslave)
- * [Backup of a MySQL cluster](#backup-of-a-mysql-cluster)
+ * [Backuping](#backuping)
  * [Checking backup](#checking-backup)
  * [Restore from backup](#restore-from-backup)
+ * [Replication - Master/Slave](#replication---masterslave)
  * [Environment variables](#environment-variables) 
  * [Logging](#logging) 
  * [Out of the box](#out-of-the-box)
@@ -124,62 +123,7 @@ docker run --name mysql -d \
 
 This will make sure that the data stored in the database is not lost when the image is stopped and started again.
 
-Replication - Master/Slave
--------------------------
-
-You may use the `MYSQL_MODE` variable along with `REPLICATION_HOST`, `REPLICATION_PORT`, `REPLICATION_USER` and `REPLICATION_PASS` to enable replication.
-
-Your master database must support replication or super-user access for the credentials you specify. The `MYSQL_MODE` variable should be set to `master`, for replication on your master node and `slave` for replication or a point-in-time snapshot of a running instance.
-
-Create a master instance with database `dbname`
-
-```bash
-docker run --name='mysql-master' -d \
-  -e 'MYSQL_MODE=master' \
-  -e 'DB_NAME=dbname' \
-  -e 'MYSQL_USER=dbuser' -e 'MYSQL_PASS=dbpass' \
-  romeoz/docker-mysql
-```
-
-or import backup
-
-```bash
-docker run --name='mysql-master' -d \
-  -e 'MYSQL_MODE=master' \
-  -e 'MYSQL_RESTORE=/tmp/backup/backup.last.bz2' \
-  -e 'MYSQL_USER=dbuser' -e 'MYSQL_PASS=dbpass' \
-  -v /host/to/path/backup:/tmp/backup \
-  romeoz/docker-mysql
-```
-
-Create a slave instance + fast import backup from master
-
-```bash
-docker run --name='mysql-slave' -d  \
-  --link mysql-master:mysql-master  \
-  -e 'MYSQL_MODE=slave' -e 'MYSQL_PASS=pass' \
-  -e 'REPLICATION_HOST=mysql-master' \
-  -e 'DB_REMOTE_USER=dbuser' -e 'DB_REMOTE_PASS=dbpass' \
-  romeoz/docker-mysql
-```
-
-Variables `DB_REMOTE_USER` and `DB_REMOTE_PASS` is master settings. 
-
-or import as backup file
-
-```bash
-docker run --name='mysql-slave' -d  \
-  --link mysql-master:mysql-master  \
-  -e 'MYSQL_MODE=slave' -e 'MYSQL_PASS=pass' \
-  -e 'REPLICATION_HOST=mysql-master' \
-  -e 'MYSQL_RESTORE=/tmp/backup/backup.last.bz2' \
-  -v /host/to/path/backup:/tmp/backup \
-  romeoz/docker-mysql
-```
-
->Protection against unauthorized inserting records `docker exec -it mysql-slave mysql -uroot -e 'GRANT SELECT ON *.* TO "web"@"%" WITH GRANT OPTION;'`
-
-Backup of a MySQL cluster
+Backuping
 -------------------
 
 The backup all databases is made over a regular MySQL connection (used [mysqldump](https://dev.mysql.com/doc/refman/5.6/en/mysqldump.html)).
@@ -237,6 +181,61 @@ docker run --name='db_restore' -d \
 ```
 
 Also see ["Replication"](replication---masterslave).
+
+Replication - Master/Slave
+-------------------------
+
+You may use the `MYSQL_MODE` variable along with `REPLICATION_HOST`, `REPLICATION_PORT`, `REPLICATION_USER` and `REPLICATION_PASS` to enable replication.
+
+Your master database must support replication or super-user access for the credentials you specify. The `MYSQL_MODE` variable should be set to `master`, for replication on your master node and `slave` for replication or a point-in-time snapshot of a running instance.
+
+Create a master instance with database `dbname`
+
+```bash
+docker run --name='mysql-master' -d \
+  -e 'MYSQL_MODE=master' \
+  -e 'DB_NAME=dbname' \
+  -e 'MYSQL_USER=dbuser' -e 'MYSQL_PASS=dbpass' \
+  romeoz/docker-mysql
+```
+
+or import backup
+
+```bash
+docker run --name='mysql-master' -d \
+  -e 'MYSQL_MODE=master' \
+  -e 'MYSQL_RESTORE=/tmp/backup/backup.last.bz2' \
+  -e 'MYSQL_USER=dbuser' -e 'MYSQL_PASS=dbpass' \
+  -v /host/to/path/backup:/tmp/backup \
+  romeoz/docker-mysql
+```
+
+Create a slave instance + fast import backup from master
+
+```bash
+docker run --name='mysql-slave' -d  \
+  --link mysql-master:mysql-master  \
+  -e 'MYSQL_MODE=slave' -e 'MYSQL_PASS=pass' \
+  -e 'REPLICATION_HOST=mysql-master' \
+  -e 'DB_REMOTE_USER=dbuser' -e 'DB_REMOTE_PASS=dbpass' \
+  romeoz/docker-mysql
+```
+
+Variables `DB_REMOTE_USER` and `DB_REMOTE_PASS` is master settings. 
+
+or import as backup file
+
+```bash
+docker run --name='mysql-slave' -d  \
+  --link mysql-master:mysql-master  \
+  -e 'MYSQL_MODE=slave' -e 'MYSQL_PASS=pass' \
+  -e 'REPLICATION_HOST=mysql-master' \
+  -e 'MYSQL_RESTORE=/tmp/backup/backup.last.bz2' \
+  -v /host/to/path/backup:/tmp/backup \
+  romeoz/docker-mysql
+```
+
+>Protection against unauthorized inserting records `docker exec -it mysql-slave mysql -uroot -e 'GRANT SELECT ON *.* TO "web"@"%" WITH GRANT OPTION;'`
 
 Environment variables
 ---------------------
