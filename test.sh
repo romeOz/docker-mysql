@@ -5,7 +5,7 @@ set -e
 echo "-- Building mysql 5.5 image"
 docker build -t mysql-5.5 5.5/
 DIR_VOLUME=$(pwd)/vol55
-mkdir ${DIR_VOLUME}
+mkdir -p ${DIR_VOLUME}/backup
 
 echo
 echo "-- Testing mysql 5.5 is running"
@@ -83,7 +83,7 @@ echo
 echo "-- Building mysql 5.6 image"
 docker build -t mysql-5.6 5.6/
 DIR_VOLUME=$(pwd)/vol56
-mkdir ${DIR_VOLUME}
+mkdir -p ${DIR_VOLUME}/backup
 
 echo
 echo "-- Testing mysql 5.6 is running"
