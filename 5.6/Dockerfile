@@ -8,7 +8,7 @@ ENV MYSQL_USER=admin \
     REPLICATION_HOST= \
     REPLICATION_PORT=3306 \
     MYSQL_DATA_DIR=/var/lib/mysql \
-    MYSQL_CONFIG=/etc/mysql/conf.d/my.cnf \
+    MYSQL_CONFIG=/etc/mysql/conf.d/custom.cnf \
     MYSQL_RUN_DIR=/var/run/mysqld \
     MYSQL_LOG=/var/log/mysql/error.log \
     OS_LOCALE="en_US.UTF-8"
@@ -20,14 +20,17 @@ ENV LANG=${OS_LOCALE} \
     LC_ALL=${OS_LOCALE}
 
 # Add MySQL configuration
-COPY my.cnf ${MYSQL_CONFIG}
-COPY mysqld_charset.cnf /etc/mysql/conf.d/mysqld_charset.cnf
+COPY custom.cnf ${MYSQL_CONFIG}
 
-RUN apt-get update \
-    && apt-get -yq install mysql-common-5.6 mysql-server-5.6 mysql-client-5.6 lbzip2 \
+RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 5072E1F5 \
+    && echo "deb http://repo.mysql.com/apt/ubuntu/ trusty mysql-5.6" | sudo tee /etc/apt/sources.list.d/mysql.list \
+    && apt-get update \
+    && apt-get -yq install mysql-server-5.6 mysql-client-5.6 lbzip2 \
     && rm -rf /var/lib/apt/lists/* \
-    && rm /etc/mysql/conf.d/mysqld_safe_syslog.cnf \
-    && touch /tmp/.EMPTY_DB
+    && rm -f /etc/mysql/conf.d/mysqld_safe_syslog.cnf \
+    && touch /tmp/.EMPTY_DB \
+    # Forward request and error logs to docker log collector
+    && ln -sf /dev/stderr ${MYSQL_LOG}
 
 COPY entrypoint.sh /sbin/entrypoint.sh
 RUN chmod 755 /sbin/entrypoint.sh

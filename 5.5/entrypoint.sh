@@ -4,7 +4,7 @@ set -m
 set -e
 
 MYSQL_DATA_DIR=${MYSQL_DATA_DIR:-"/var/lib/mysql"}
-MYSQL_CONFIG=${MYSQL_CONFIG:-"/etc/mysql/conf.d/my.cnf"}
+MYSQL_CONFIG=${MYSQL_CONFIG:-"/etc/mysql/conf.d/custom.cnf"}
 MYSQL_LOG=${MYSQL_LOG:-"/var/log/mysql/error.log"}
 MYSQL_BACKUP_DIR=${MYSQL_BACKUP_DIR:-"/tmp/backup"}
 MYSQL_BACKUP_FILENAME=${MYSQL_BACKUP_FILENAME:-"backup.last.bz2"}
@@ -31,16 +31,15 @@ REPLICATION_PORT=${REPLICATION_PORT:-3306}
 
 # Set permission of config file
 chmod 644 ${MYSQL_CONFIG}
-chmod 644 /etc/mysql/conf.d/mysqld_charset.cnf
 
 start_mysql()
 {
-    /usr/bin/mysqld_safe >/dev/null 2>&1 &
+    $(which mysqld_safe) >/dev/null 2>&1 &
 
     # wait for mysql server to start (max 30 seconds)
     timeout=30
     echo -n "Waiting for database server to accept connections"
-    while ! /usr/bin/mysqladmin -u root status >/dev/null 2>&1
+    while ! $(which mysqladmin) -u root status >/dev/null 2>&1
     do
       timeout=$(($timeout - 1))
       if [ $timeout -eq 0 ]; then
@@ -129,6 +128,7 @@ import_backup()
             exit 1
         fi
     done
+    rm -f ${MYSQL_DATA_DIR}/auto.cnf
 }
 
 # Initialize empty data volume and create MySQL user
@@ -154,7 +154,7 @@ if [[ ${MYSQL_MODE} == master ]]; then
         RAND="$(date +%s | rev | cut -c 1-2)$(echo ${RANDOM})"
         echo "Writting configuration file '${MYSQL_CONFIG}' with server-id=${RAND}"
         sed -i "s/^#server-id.*/server-id = ${RAND}/" ${MYSQL_CONFIG}
-        sed -i "s/^#log-bin.*/log-bin = mysql-bin/" ${MYSQL_CONFIG}
+        sed -i "s/^#log-bin.*/log-bin = ${HOSTNAME}-bin/" ${MYSQL_CONFIG}
         touch /tmp/.REPLICATION_SET_1
     else
         echo "MySQL replication master already configured, skip"
@@ -175,8 +175,8 @@ if [[ ${MYSQL_MODE} == slave ]]; then
         RAND="$(date +%s | rev | cut -c 1-2)$(echo ${RANDOM})"
         echo "Writting configuration file '${MYSQL_CONFIG}' with server-id=${RAND}"
         sed -i "s/^#server-id.*/server-id = ${RAND}/" ${MYSQL_CONFIG}
-        sed -i "s/^#log-bin.*/log-bin = mysql-bin/" ${MYSQL_CONFIG}
-        sed -i "s/^#relay-log.*/relay-log = mysql-relay-bin/" ${MYSQL_CONFIG}
+        sed -i "s/^#log-bin.*/log-bin = ${HOSTNAME}-bin/" ${MYSQL_CONFIG}
+        sed -i "s/^#relay-log.*/relay-log = ${HOSTNAME}-relay-bin/" ${MYSQL_CONFIG}
         # 1062 - Duplicate entry for INSERT...
         #sed -i "s/^#slave-skip-errors.*/slave-skip-errors = 1062/" ${MYSQL_CONFIG}
         touch /tmp/.REPLICATION_SET_1
@@ -297,6 +297,7 @@ if [[ -z ${1} ]]; then
                 mysqldump --all-databases --master-data --single-transaction --compress \
                     --host=${REPLICATION_HOST} --port=${REPLICATION_PORT} \
                     --user=${DB_REMOTE_USER} --password=${DB_REMOTE_PASS} | mysql -uroot
+                rm -f ${MYSQL_DATA_DIR}/auto.cnf
             fi
             if [[ -n ${MYSQL_RESTORE} ]]; then
                 echo "Import dump..."
@@ -310,8 +311,8 @@ if [[ -z ${1} ]]; then
         fi
     fi
 
-    /usr/bin/mysqladmin shutdown
-    exec mysqld_safe ${EXTRA_OPTS}
+    $(which mysqladmin) shutdown
+    exec $(which mysqld_safe) ${EXTRA_OPTS}
 else
     exec "$@"
 fi
