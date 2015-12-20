@@ -126,7 +126,7 @@ This will make sure that the data stored in the database is not lost when the im
 Backuping
 -------------------
 
-The backup all databases is made over a regular MySQL connection (used [mysqldump](https://dev.mysql.com/doc/refman/5.6/en/mysqldump.html)).
+The backup all databases is made over a regular MySQL connection (used [mysqldump](https://dev.mysql.com/doc/refman/5.7/en/mysqldump.html)).
 
 Create a temporary container for backup:
 
@@ -307,9 +307,9 @@ Create the file `/etc/logrotate.d/docker-containers` with the following text ins
 Out of the box
 -------------------
  * Ubuntu 14.04.3 (LTS)
- * MySQL 5.5/5.6
+ * MySQL 5.5/5.6/5.7
 
 License
 -------------------
 
-MySQL container image is open-sourced software licensed under the [MIT license](http://opensource.org/licenses/MIT)
+MySQL container image is open-sourced software licensed under the [MIT license](http://opensource.org/licenses/MIT).
