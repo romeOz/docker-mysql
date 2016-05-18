@@ -36,7 +36,7 @@ docker build -t="$USER/mysql" .
 Quick Start
 -------------------
 
-Run the mysql image:
+Run the mysql container:
 
 ```bash
 docker run --name mysql -d romeoz/docker-mysql
@@ -121,7 +121,7 @@ docker run --name mysql -d \
   romeoz/docker-mysql
 ```
 
-This will make sure that the data stored in the database is not lost when the image is stopped and started again.
+This will make sure that the data stored in the database is not lost when the container is stopped and started again.
 
 Backuping
 -------------------
@@ -316,4 +316,4 @@ Out of the box
 License
 -------------------
 
-MySQL container image is open-sourced software licensed under the [MIT license](http://opensource.org/licenses/MIT).
+MySQL docker image is open-sourced software licensed under the [MIT license](http://opensource.org/licenses/MIT).
