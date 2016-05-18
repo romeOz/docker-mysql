@@ -18,7 +18,7 @@ Table of Contents
 Installation
 -------------------
 
- * [Install Docker](https://docs.docker.com/installation/) or [askubuntu](http://askubuntu.com/a/473720)
+ * [Install Docker 1.9+](https://docs.docker.com/installation/) or [askubuntu](http://askubuntu.com/a/473720)
  * Pull the latest version of the image.
  
 ```bash
@@ -132,7 +132,7 @@ Create a temporary container for backup:
 
 ```bash
 docker run -it --rm \
-    --link mysql:mysql \
+    --net mysql_net \
     -e 'MYSQL_MODE=backup' \
     -e 'DB_REMOTE_HOST=mysql' -e 'DB_REMOTE_USER=admin' -e 'DB_REMOTE_PASS=pass' \
     -v /host/to/path/backup:/tmp/backup \
@@ -147,7 +147,7 @@ To pass additional settings to `mysqldump`, you can use command-line arguments:
 
 ```bash
 docker run -it --rm \
-    --link mysql-master:mysql-master \
+    --net mysql_net \
     -e 'MYSQL_MODE=backup' \    
     -e 'DB_REMOTE_HOST=mysql' -e 'DB_REMOTE_USER=admin' -e 'DB_REMOTE_PASS=pass' \
     -v /host/to/path/backup:/tmp/backup \    
@@ -192,6 +192,8 @@ Your master database must support replication or super-user access for the crede
 Create a master instance with database `dbname`
 
 ```bash
+docker network create mysql_net
+
 docker run --name='mysql-master' -d \
   -e 'MYSQL_MODE=master' \
   -e 'DB_NAME=dbname' \
@@ -202,6 +204,8 @@ docker run --name='mysql-master' -d \
 or import backup
 
 ```bash
+docker network create mysql_net
+
 docker run --name='mysql-master' -d \
   -e 'MYSQL_MODE=master' \
   -e 'MYSQL_RESTORE=/tmp/backup/backup.last.bz2' \
@@ -214,7 +218,7 @@ Create a slave instance + fast import backup from master
 
 ```bash
 docker run --name='mysql-slave' -d  \
-  --link mysql-master:mysql-master  \
+  --net mysql_net  \
   -e 'MYSQL_MODE=slave' -e 'MYSQL_PASS=pass' \
   -e 'REPLICATION_HOST=mysql-master' \
   -e 'DB_REMOTE_USER=dbuser' -e 'DB_REMOTE_PASS=dbpass' \
@@ -227,7 +231,7 @@ or import as backup file
 
 ```bash
 docker run --name='mysql-slave' -d  \
-  --link mysql-master:mysql-master  \
+  --net mysql_net  \
   -e 'MYSQL_MODE=slave' -e 'MYSQL_PASS=pass' \
   -e 'REPLICATION_HOST=mysql-master' \
   -e 'MYSQL_RESTORE=/tmp/backup/backup.last.bz2' \
@@ -306,8 +310,8 @@ Create the file `/etc/logrotate.d/docker-containers` with the following text ins
 
 Out of the box
 -------------------
- * Ubuntu 14.04.3 (LTS)
- * MySQL 5.5/5.6/5.7
+ * Ubuntu 14.04 LTS
+ * MySQL 5.5, 5.6 or 5.7
 
 License
 -------------------
