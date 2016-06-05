@@ -1,4 +1,4 @@
-FROM ubuntu:trusty
+FROM ubuntu:xenial
 MAINTAINER romeOz <serggalka@gmail.com>
 
 ENV MYSQL_USER=admin \
@@ -19,17 +19,20 @@ ENV LANG=${OS_LOCALE} \
     LANGUAGE=en_US:en \
     LC_ALL=${OS_LOCALE}
 
-# Add MySQL configuration
-COPY custom.cnf ${MYSQL_CONFIG}
-
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 5072E1F5 \
-    && echo "deb http://repo.mysql.com/apt/ubuntu/ trusty mysql-5.7" | sudo tee /etc/apt/sources.list.d/mysql.list \
+    && echo "deb http://repo.mysql.com/apt/ubuntu/ xenial mysql-5.7" | tee /etc/apt/sources.list.d/mysql.list \
     && apt-get update \
-    && apt-get -yq install mysql-server-5.7 mysql-client-5.7 lbzip2 \
+    && apt-get -yq install mysql-server mysql-client lbzip2 \
+    && rm -rf /etc/mysql/* \
+    && mkdir /etc/mysql/conf.d \
     && rm -rf /var/lib/apt/lists/* \
     && touch /tmp/.EMPTY_DB \
     # Forward request and error logs to docker log collector
     && ln -sf /dev/stderr ${MYSQL_LOG}
+
+# Add MySQL configuration
+COPY my.cnf /etc/mysql/my.cnf
+COPY custom.cnf ${MYSQL_CONFIG}
 
 COPY entrypoint.sh /sbin/entrypoint.sh
 RUN chmod 755 /sbin/entrypoint.sh
