@@ -310,8 +310,10 @@ Create the file `/etc/logrotate.d/docker-containers` with the following text ins
 
 Out of the box
 -------------------
- * Ubuntu 14.04 LTS
+ * Ubuntu 14.04 or 16.04 LTS
  * MySQL 5.5, 5.6 or 5.7
+ 
+>Environment depends on the version of MySQL. 
 
 License
 -------------------
